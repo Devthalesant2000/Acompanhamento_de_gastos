@@ -89,9 +89,6 @@ def get_sheet_as_df(spreadsheet_id: str, sheet_name: str, retries: int = 3, dela
     # se por algum motivo sair do loop sem retornar/raise
     raise last_exc
 
-import numpy as np  # garante que isso esteja no topo
-import pandas as pd
-
 def append_resposta_forms(
     spreadsheet_id: str,
     df_rows: pd.DataFrame,
@@ -106,6 +103,7 @@ def append_resposta_forms(
         "Valor_Total",
         "Forma_de_Pagamento",
         "Parcelas",
+        "Valor_parcela",
         "Parcela_Atual",
     ]
 
