@@ -5,6 +5,17 @@ from Functions.get_data_from_sheets import (
     append_resposta_forms,
     append_fornecedor,
 )
+from Functions.theme import *
+
+apply_custom_theme()
+
+col1, col2, col3 = st.columns([1, 3, 1])
+with col2:
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="color: #006400; margin: 0;">💰 Verdão Finances</h1>
+    </div>
+    """, unsafe_allow_html=True)
 
 spreadsheet_id = '1q0xLDFXhV_k7QNePUdA43KqFxvxyeI8AzyqZfdES42w'
 sheet_name_get = 'categorias'
@@ -81,14 +92,15 @@ except Exception:
 opcoes_fornecedor = fornecedores_lista + ["+ Cadastrar novo fornecedor"]
 
 fornecedor_selecionado = st.selectbox(
-    "Fornecedor",
+    "🏢 Fornecedor",
     opcoes_fornecedor,
     key="fornecedor_select",
-    index=None,  # começa vazio
+    index=None,
+    help="Selecione um fornecedor existente ou cadastre um novo"
 )
 
 if fornecedor_selecionado == None:
-    st.warning("Favor Selecionar um Fornecdor ou cadastrar um novo")
+    st.warning("Favor Selecionar um Fornecdor ou cadastrar um novo!")
     st.stop()
 
 novo_fornecedor = ""
@@ -98,10 +110,10 @@ if fornecedor_selecionado == "+ Cadastrar novo fornecedor":
 
 # --- FORM PRINCIPAL ---
 with st.form("form_gasto"):
-    data = st.date_input("Data", key="data_input")
+    data = st.date_input("📅Data", key="data_input")
 
     categoria = st.selectbox(
-        "Categoria",
+        "🏷️Categoria",
         opcoes_categoria,
         key="categoria",
         index=None,
@@ -111,15 +123,18 @@ with st.form("form_gasto"):
 
     opcoes_forma_pagto = ["Selecione a forma de pagamento", "Crédito", "Débito", "Pix", "Dinheiro", "Boleto"]
     forma_pagamento = st.selectbox(
-        "Forma de Pagamento",
+        "💳Forma de Pagamento",
         opcoes_forma_pagto,
         key="forma_pagamento",
         index=None,
     )
 
-    parcelas = st.number_input("Parcelas", min_value=1, step=1, value=1, key="parcelas")
+    parcelas = st.number_input("🔢Parcelas", min_value=1, step=1, value=1, key="parcelas")
 
-    submit = st.form_submit_button("Salvar")
+    # Botão centralizado
+    col5, col6, col7 = st.columns([1, 2, 1])
+    with col6:
+        submit = st.form_submit_button("✅ SALVAR GASTO", use_container_width=True)
 
 if submit:
     # --- validação de centro, categoria, fornecedor, forma pagamento ---
@@ -199,8 +214,17 @@ if submit:
     df_nova_linha = pd.DataFrame(linhas)
     append_resposta_forms(spreadsheet_id, df_nova_linha, sheet_name_push)
 
-    st.success(f"{parcelas_int} lançamento(s) salvo(s) na planilha! ✅")
+    show_success_message(f"{parcelas_int} lançamento(s) salvo(s) na planilha!")
+
 
     # --- MARCA RESET PARA O PRÓXIMO RUN ---
     st.session_state["reset_form"] = True
     st.rerun()
+
+st.markdown("---")
+st.markdown("""
+<div style="text-align: center; color: #666; padding: 20px;">
+    <p>🏆 <strong>Controle de Gastos Verdão</strong> | Por um patrimônio sempre no verde! 🏆</p>
+    <p style="font-size: 0.8em;">© 2025 - Desenvolvido por Thales Santoro</p>
+</div>
+""", unsafe_allow_html=True)

@@ -1,10 +1,12 @@
 import streamlit as st
+from Functions import *
 
 st.set_page_config(
     page_title="Acompanhamento de Gastos - Napoleone",
     layout="wide",
-    page_icon="💰"
+    page_icon="💰",
 )
+
 
 # ============================================
 # DEFINIÇÃO DAS PÁGINAS
