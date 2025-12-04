@@ -208,7 +208,7 @@ if submit:
             "Valor_parcela" : valores_parcelas[i],
             "Forma_de_Pagamento": forma_pagamento,
             "Parcelas": parcelas_int,
-            "Parcela_Atual": f"{i+1}/{parcelas_int}",
+            "Parcela_Atual": f"{i+1} de {parcelas_int}",
         })
 
     df_nova_linha = pd.DataFrame(linhas)

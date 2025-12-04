@@ -9,6 +9,7 @@ import numpy as np
 import streamlit as st
 import time
 import requests
+from gspread.utils import ValueRenderOption
 
 # Escopos: leitura (se depois for escrever, trocamos p/ full)
 # SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
@@ -65,28 +66,24 @@ def get_worksheet(spreadsheet_id: str, sheet_name: str):
 
 
 def get_sheet_as_df(spreadsheet_id: str, sheet_name: str, retries: int = 3, delay: float = 1.0) -> pd.DataFrame:
-    """
-    Lê uma aba da planilha e devolve um DataFrame.
-    Tenta várias vezes em caso de erro de conexão (rede instável).
-    """
     ws = get_worksheet(spreadsheet_id, sheet_name)
 
     last_exc = None
     for attempt in range(retries):
         try:
-            data = ws.get_all_records()
+            data = ws.get_all_records(
+                value_render_option=ValueRenderOption.unformatted  # 👈 pega o valor cru
+            )
             df = pd.DataFrame(data)
             return df
         except (requests.exceptions.ConnectionError, TransportError) as e:
             last_exc = e
             print(f"⚠️ Erro de conexão ao ler a planilha (tentativa {attempt+1}/{retries}): {repr(e)}")
             if attempt < retries - 1:
-                time.sleep(delay * (2 ** attempt))  # backoff: 1s, 2s, 4s...
+                time.sleep(delay * (2 ** attempt))
             else:
-                # última tentativa falhou
                 raise
 
-    # se por algum motivo sair do loop sem retornar/raise
     raise last_exc
 
 def append_resposta_forms(
