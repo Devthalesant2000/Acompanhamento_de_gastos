@@ -11,12 +11,12 @@ import time
 import requests
 from gspread.utils import ValueRenderOption
 
-# Escopos: leitura (se depois for escrever, trocamos p/ full)
-# SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
-
+# Escopos: leitura/escrita
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
+# 🔹 Client do gspread cacheado (criado 1x por sessão)
+@st.cache_resource
 def get_gspread_client():
     """
     Retorna um client do gspread usando:
@@ -42,12 +42,16 @@ def get_gspread_client():
             "service_account.json",
             scopes=SCOPES,
         )
-        
+
     client = gspread.authorize(creds)
     return client
 
 
 def get_worksheet(spreadsheet_id: str, sheet_name: str):
+    """
+    Retorna a worksheet específica da planilha.
+    Usa o client cacheado.
+    """
     client = get_gspread_client()
 
     try:
@@ -65,32 +69,31 @@ def get_worksheet(spreadsheet_id: str, sheet_name: str):
     return ws
 
 
-def get_sheet_as_df(spreadsheet_id: str, sheet_name: str, retries: int = 3, delay: float = 1.0) -> pd.DataFrame:
+# 🔹 Leitura de sheet em DataFrame com cache
+@st.cache_data(ttl=300)  # cache por 5 minutos (ajuste se quiser)
+def get_sheet_as_df(spreadsheet_id: str, sheet_name: str) -> pd.DataFrame:
+    """
+    Lê uma aba do Google Sheets e retorna como DataFrame.
+    Resultado é cacheado para melhorar desempenho.
+    """
     ws = get_worksheet(spreadsheet_id, sheet_name)
 
-    last_exc = None
-    for attempt in range(retries):
-        try:
-            data = ws.get_all_records(
-                value_render_option=ValueRenderOption.unformatted  # 👈 pega o valor cru
-            )
-            df = pd.DataFrame(data)
-            return df
-        except (requests.exceptions.ConnectionError, TransportError) as e:
-            last_exc = e
-            print(f"⚠️ Erro de conexão ao ler a planilha (tentativa {attempt+1}/{retries}): {repr(e)}")
-            if attempt < retries - 1:
-                time.sleep(delay * (2 ** attempt))
-            else:
-                raise
+    data = ws.get_all_records(
+        value_render_option=ValueRenderOption.unformatted  # pega o valor cru
+    )
+    df = pd.DataFrame(data)
+    return df
 
-    raise last_exc
 
 def append_resposta_forms(
     spreadsheet_id: str,
     df_rows: pd.DataFrame,
     sheet_name: str = "respostas_forms",
 ):
+    """
+    Adiciona uma ou mais linhas na aba 'respostas_forms'.
+    Não é cacheado (operação de escrita).
+    """
     expected_cols = [
         "ID_Compra",
         "Fornecedor",
@@ -130,10 +133,14 @@ def append_resposta_forms(
     ws = get_worksheet(spreadsheet_id, sheet_name)
     ws.append_rows(rows_to_append, value_input_option="USER_ENTERED")
 
+    # Se você tiver telas que leem essa mesma aba, pode invalidar cache aqui se quiser:
+    # get_sheet_as_df.clear()
+
 
 def append_fornecedor(spreadsheet_id: str, fornecedor: str, sheet_name: str = "fornecedores_db"):
     """
     Adiciona um fornecedor na aba de fornecedores, se ainda não existir.
+    E limpa o cache da leitura dessa aba.
     """
     if not fornecedor:
         return
@@ -148,3 +155,9 @@ def append_fornecedor(spreadsheet_id: str, fornecedor: str, sheet_name: str = "f
         return  # já existe, não precisa cadastrar
 
     ws.append_row([fornecedor.strip()], value_input_option="USER_ENTERED")
+
+    # 🔹 Limpa cache da aba de fornecedores, para próxima leitura vir atualizada
+    try:
+        get_sheet_as_df.clear()
+    except Exception as e:
+        print("Não consegui limpar cache de get_sheet_as_df:", repr(e))
