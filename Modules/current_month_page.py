@@ -14,6 +14,14 @@ sheet_fornecedores = 'fornecedores_db'
 # Pegando Dataframe
 df_despesas = get_sheet_as_df(spreadsheet_id, sheet_name_get)
 
+#Tratar data recebidas
+df_despesas["Data"] = pd.to_datetime(
+                      df_despesas["Data"],
+                      origin="1899-12-30",
+                      unit="D"
+                      )
+
+df_despesas = df_despesas.sort_values(by=['Data'],ascending=True)
 # Informações de data 
 hoje = date.today()
 mes_atual = hoje.month

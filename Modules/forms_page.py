@@ -7,6 +7,7 @@ from Functions.get_data_from_sheets import (
 )
 from Functions.theme import *
 import time
+import uuid
 
 # ---------------------------
 # TÍTULO / HEADER
@@ -208,7 +209,8 @@ if submit:
 
     # ID da compra
     data_compra_id = base_date.strftime("%Y-%m-%d")
-    id_compra = f"{fornecedor_final} - {data_compra_id}"
+    id_unico = uuid.uuid4().hex[:5].upper()  
+    id_compra = f"{fornecedor_final} - {data_compra_id} - {id_unico}"
 
     linhas = []
     for i in range(parcelas_int):

@@ -12,13 +12,7 @@ mes_ano_atual = mes_atual_str + "/" +  ano_atual_str
 
 def treating_df_for_current_month(df):
     df_mes_atual = df
-    # Usamos esse modelo pois estamos requsitando so dados Crus da API para não ter problema de formatação noa valores
-    df_mes_atual["Data"] = pd.to_datetime(
-        df_mes_atual["Data"],
-        origin="1899-12-30",
-        unit="D"
-    )
-
+    
     df_mes_atual["Parcela_Atual"] = df_mes_atual["Parcela_Atual"].astype(str)
 
     df_mes_atual['Mês_ano'] = df_mes_atual['Data'].dt.strftime("%m/%Y")

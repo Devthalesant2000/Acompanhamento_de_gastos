@@ -3,6 +3,9 @@ import streamlit as st
 from datetime import datetime, date
 import plotly.express as px
 
+############################################################
+##GRAPHICS FOR CURRENT MONTH
+############################################################
 
 def grafico_de_gastos_diarios(df_mes_atual):
     #gráfico de gastos diários (somente novas compras)
@@ -156,3 +159,7 @@ def grafico_de_formas_de_pagamento(df_mes_atual):
     )
 
     return st.plotly_chart(fig, use_container_width=True)
+
+############################################################
+##GRAPHICS FOR COMPILED ANALYSIS
+############################################################

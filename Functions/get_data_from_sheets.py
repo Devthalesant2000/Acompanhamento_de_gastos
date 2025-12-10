@@ -81,7 +81,10 @@ def get_sheet_as_df(spreadsheet_id: str, sheet_name: str) -> pd.DataFrame:
     data = ws.get_all_records(
         value_render_option=ValueRenderOption.unformatted  # pega o valor cru
     )
+
+    # Usamos esse modelo pois estamos requsitando so dados Crus da API para não ter problema de formatação noa valores
     df = pd.DataFrame(data)
+
     return df
 
 
