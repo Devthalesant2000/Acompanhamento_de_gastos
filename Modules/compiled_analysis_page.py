@@ -106,11 +106,11 @@ else:
 
         elif ano_analise > ano_atual:
             df_despesas_ano_analisado = df_despesas.loc[df_despesas['Ano'] > ano_atual]
-            # st.dataframe(df_despesas_ano_analisado)
+            st.dataframe(df_despesas_ano_analisado)
 
         else:
             df_despesas_ano_analisado = df_despesas.loc[df_despesas['Ano'] < ano_atual]
-            # st.dataframe(df_despesas_ano_analisado)
+            st.dataframe(df_despesas_ano_analisado)
 
 
 
