@@ -147,7 +147,7 @@ with st.form("form_gasto"):
     # Botão centralizado
     col5, col6, col7 = st.columns([1, 2, 1])
     with col6:
-        submit = st.form_submit_button("✅ SALVAR GASTO", use_container_width=True)
+        submit = st.form_submit_button("✅ SALVAR GASTO", width='content')
 
 # ---------------------------
 # TRATAMENTO DO SUBMIT
