@@ -124,7 +124,7 @@ else:
                     .replace(",", "X").replace(".", ",").replace("X", ".")
                 )
 
-            ## Colocar um input para o usuário selecionar o mês para ver quanto gastou Mês a Mês por categoria e forma de Pagamento:
+            ## Colocar um input para o usuário selecionar o mês para ver quanto gastou Mês a Mês por categoria e forma de Pagamento:    
             df_ytd = df_despesas.loc[df_despesas['Ano'] == ano_analise]
             df_ytd = df_ytd.loc[df_despesas['Mês'] < mes_atual]
             df_ytd["Mês_str"] = df_despesas['Mês'].map(mes_dict)
