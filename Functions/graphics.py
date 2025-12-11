@@ -2,6 +2,8 @@ import pandas as pd
 import streamlit as st 
 from datetime import datetime, date
 import plotly.express as px
+import plotly.graph_objects as go
+from .dictionaries import *
 
 ############################################################
 ##GRAPHICS FOR CURRENT MONTH
@@ -163,3 +165,100 @@ def grafico_de_formas_de_pagamento(df_mes_atual):
 ############################################################
 ##GRAPHICS FOR COMPILED ANALYSIS
 ############################################################
+
+def gerar_grafico_gastos_mensais(df_despesas,ano_atual,mes_atual,ano_analise):
+    df_grafico_gastos_mensal = df_despesas.loc[df_despesas['Ano'] == ano_analise]
+    df_grafico_gastos_mensal = df_grafico_gastos_mensal.loc[df_despesas['Mês'] < mes_atual]
+
+    grafico_gastos_mensais_gp = df_grafico_gastos_mensal.groupby(['Mês']).agg({'Valor_parcela' : 'sum'}).reset_index()
+    grafico_gastos_mensais_gp['Mês_str'] = grafico_gastos_mensais_gp['Mês'].map(mes_dict_abr)
+
+    grafico_gastos_mensais_gp = grafico_gastos_mensais_gp[['Mês_str','Valor_parcela']]
+
+    # ----- Média móvel (3 meses) -----
+    grafico_gastos_mensais_gp["Media_movel"] = (
+        grafico_gastos_mensais_gp["Valor_parcela"]
+        .rolling(window=3, min_periods=1)
+        .mean()
+    )
+
+    # ----- Cores: destaca o maior gasto -----
+    max_val = grafico_gastos_mensais_gp["Valor_parcela"].max()
+    bar_colors = [
+        "#FF6666" if v == max_val else "#2E8B57"
+        for v in grafico_gastos_mensais_gp["Valor_parcela"]
+    ]
+
+    fig = go.Figure()
+
+    # Barras (valor mensal)
+    fig.add_trace(go.Bar(
+        x=grafico_gastos_mensais_gp["Mês_str"],
+        y=grafico_gastos_mensais_gp["Valor_parcela"],
+        name="Valor pago",
+        marker_color=bar_colors,
+        hovertemplate="<b>Mês:</b> %{x}<br><b>Valor:</b> R$ %{y:,.2f}<extra></extra>",
+    ))
+
+    # Linha (média móvel)
+    fig.add_trace(go.Scatter(
+        x=grafico_gastos_mensais_gp["Mês_str"],
+        y=grafico_gastos_mensais_gp["Media_movel"],
+        name="Média móvel (3 meses)",
+        mode="lines+markers",
+        line=dict(color="orange", width=3),
+        hovertemplate="<b>Mês:</b> %{x}<br><b>Média móvel:</b> R$ %{y:,.2f}<extra></extra>",
+    ))
+
+    fig.update_layout(
+        title="Gastos Mensais com Média Móvel",
+        xaxis_title="Mês",
+        yaxis_title="Valor (R$)",
+        template="simple_white",
+        legend=dict(yanchor="top", y=0.98, xanchor="left", x=0.02),
+        yaxis=dict(tickprefix="R$ ", separatethousands=True),
+    )
+
+    return st.plotly_chart(fig, use_container_width=True)
+
+
+def graficos_adicionais(df_despesas,ano_analise,mes_atual,mes_dict):
+    df_ytd = df_despesas.loc[df_despesas['Ano'] == ano_analise]
+    df_ytd = df_ytd.loc[df_despesas['Mês'] < mes_atual]
+    df_ytd["Mês_str"] = df_ytd['Mês'].map(mes_dict)
+    
+    lista_de_meses = df_ytd["Mês_str"].unique().tolist()
+    mes_selecionado = st.selectbox("Selecione um mês:", lista_de_meses)
+
+    # Filtrar
+    df_mes_dinamico = df_ytd.loc[df_ytd["Mês_str"] == mes_selecionado]
+
+    # Agrupamentos
+    gp_pagamento = df_mes_dinamico.groupby("Forma_de_Pagamento")["Valor_parcela"].sum().reset_index()
+    gp_categoria = df_mes_dinamico.groupby("Categoria")["Valor_parcela"].sum().reset_index()
+
+    # FIG PAGAMENTO
+    fig_pagamento = px.bar(
+        gp_pagamento,
+        x="Valor_parcela",
+        y="Forma_de_Pagamento",
+        orientation="h",
+        title="Gastos por Forma de Pagamento",
+        text="Valor_parcela"
+    )
+    fig_pagamento.update_traces(texttemplate="R$ %{text:,.2f}", textposition="outside")
+    fig_pagamento.update_layout(xaxis_title="Valor (R$)", yaxis_title="")
+
+    # FIG CATEGORIA
+    fig_categoria = px.bar(
+        gp_categoria,
+        x="Valor_parcela",
+        y="Categoria",
+        orientation="h",
+        title="Gastos por Categoria",
+        text="Valor_parcela"
+    )
+    fig_categoria.update_traces(texttemplate="R$ %{text:,.2f}", textposition="outside")
+    fig_categoria.update_layout(xaxis_title="Valor (R$)", yaxis_title="")
+
+    return fig_pagamento, fig_categoria

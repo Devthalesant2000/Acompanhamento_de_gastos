@@ -42,3 +42,20 @@ def calcular_kpis_atual(df_despesas,ano_atual,mes_atual,ano_analise):
 
     return valor_total_transacionado, valor_total_pago, valor_a_pagar,parcela_media, valor_medio_por_lancamento
 
+
+def gerar_maior_gasto(df_despesas,ano_analise,mes_atual,mes_dict):
+    df_metricas_micro = df_despesas.loc[df_despesas['Ano'] == ano_analise]
+    df_metricas_micro = df_metricas_micro.loc[df_despesas['Mês'] < mes_atual]
+    df_metricas_micro['Mês_str'] = df_metricas_micro['Mês'].map(mes_dict)
+
+    maior_valor_de_transacao_df = df_metricas_micro.sort_values(by=["Valor_Total"],ascending=False)
+    linha_top = maior_valor_de_transacao_df.iloc[0]
+
+    data_mvt = linha_top["Data"]
+    fornecedor_mvt = linha_top["Fornecedor"]
+    categoria_mvt = linha_top["Categoria"]
+    valor_mvt = linha_top["Valor_Total"]
+    parcelamento_mvt = int(linha_top["Parcelas"])
+
+    return data_mvt,fornecedor_mvt,categoria_mvt,valor_mvt,parcelamento_mvt
+

@@ -233,6 +233,20 @@ if submit:
     show_success_message(f"{parcelas_int} lançamento(s) salvo(s) na planilha! 🐷✅")
     st.success("A página será recarregada em 3 segundos !")
 
+    # Overlay bloqueando toda a tela (não dá pra clicar em nada)
+    st.markdown(
+        """
+        <div style="
+            position: fixed;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.6);
+            z-index: 9999;
+        ">
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
     # --- MARCA RESET PARA O PRÓXIMO RUN ---
     time.sleep(3)
     st.session_state["reset_form"] = True
