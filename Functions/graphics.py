@@ -4,6 +4,7 @@ from datetime import datetime, date
 import plotly.express as px
 import plotly.graph_objects as go
 from .dictionaries import *
+import numpy as np
 
 ############################################################
 ##GRAPHICS FOR CURRENT MONTH
@@ -50,7 +51,7 @@ def grafico_de_gastos_diarios(df_mes_atual):
         marker_line_width=1.5,
     )
 
-    return st.plotly_chart(fig, use_container_width=True)
+    return st.plotly_chart(fig,width='stretch')
 
 ##################################################################################################################
 
@@ -79,7 +80,7 @@ def grafico_de_fornecedores(df_mes_atual):
         legend_title_text="Fornecedores",
     )
 
-    return st.plotly_chart(fig, use_container_width=True)
+    return st.plotly_chart(fig,width='stretch')
 
 ##################################################################################################################
 
@@ -105,7 +106,7 @@ def grafico_de_categorias(df_mes_atual):
         legend_title_text="Categorias",
     )
 
-    return st.plotly_chart(fig, use_container_width=True)
+    return st.plotly_chart(fig,width='stretch')
 
 ##################################################################################################################
 
@@ -160,50 +161,115 @@ def grafico_de_formas_de_pagamento(df_mes_atual):
         margin=dict(l=10, r=10, t=50, b=10),
     )
 
-    return st.plotly_chart(fig, use_container_width=True)
+    return st.plotly_chart(fig,width='stretch')
 
-############################################################
-##GRAPHICS FOR COMPILED ANALYSIS
-############################################################
+# =========================================================
+# Helpers
+# =========================================================
+def _ajustar_barh(fig):
+    """
+    Ajusta gráfico horizontal (barh) para não cortar texto,
+    melhorar legibilidade e ordenar por total.
+    """
+    # pega os valores do eixo X (pode vir como array numpy/pandas)
+    x_vals = []
+    if fig.data and len(fig.data) > 0:
+        x0 = fig.data[0].x  # mais seguro no plotly
+        if x0 is not None:
+            x_vals = list(x0)
 
-def gerar_grafico_gastos_mensais(df_despesas,ano_atual,mes_atual,ano_analise):
-    df_grafico_gastos_mensal = df_despesas.loc[df_despesas['Ano'] == ano_analise]
-    df_grafico_gastos_mensal = df_grafico_gastos_mensal.loc[df_despesas['Mês'] < mes_atual]
+    max_x = max(x_vals) if len(x_vals) > 0 else 0
+    folga = max_x * 0.18 if max_x else 0
 
-    grafico_gastos_mensais_gp = df_grafico_gastos_mensal.groupby(['Mês']).agg({'Valor_parcela' : 'sum'}).reset_index()
-    grafico_gastos_mensais_gp['Mês_str'] = grafico_gastos_mensais_gp['Mês'].map(mes_dict_abr)
+    fig.update_traces(
+        cliponaxis=False,
+        textposition="auto"
+    )
 
-    grafico_gastos_mensais_gp = grafico_gastos_mensais_gp[['Mês_str','Valor_parcela']]
+    fig.update_layout(
+        height=520,
+        margin=dict(l=40, r=140, t=70, b=40),
+        uniformtext_minsize=10,
+        uniformtext_mode="hide",
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+    )
 
-    # ----- Média móvel (3 meses) -----
-    grafico_gastos_mensais_gp["Media_movel"] = (
-        grafico_gastos_mensais_gp["Valor_parcela"]
+    fig.update_yaxes(
+        automargin=True,
+        categoryorder="total ascending",
+        tickfont=dict(size=12),
+        showgrid=False
+    )
+
+    fig.update_xaxes(
+        range=[0, max_x + folga] if max_x else None,
+        tickformat="~s",
+        showgrid=False
+    )
+
+    return fig
+
+
+# =========================================================
+# GRAPHICS FOR COMPILED ANALYSIS
+# =========================================================
+def gerar_grafico_gastos_mensais(
+    df_despesas: pd.DataFrame,
+    ano_analise: int,
+    mes_limite: int,
+    mes_dict_abr: dict
+):
+    """
+    mes_limite:
+        - ano atual → mes_atual (para YTD, exclui o mês atual se você passar mes_atual)
+        - anos passados → 13 (ano completo)
+    """
+    df_ano = df_despesas.loc[
+        (df_despesas["Ano"] == ano_analise) &
+        (df_despesas["Mês"] < mes_limite)
+    ].copy()
+
+    if df_ano.empty:
+        return None
+
+    grafico_gp = (
+        df_ano
+        .groupby("Mês", as_index=False)
+        .agg({"Valor_parcela": "sum"})
+    )
+
+    grafico_gp["Mês_str"] = grafico_gp["Mês"].map(mes_dict_abr)
+
+    # Média móvel (3 meses)
+    grafico_gp["Media_movel"] = (
+        grafico_gp["Valor_parcela"]
         .rolling(window=3, min_periods=1)
         .mean()
     )
 
-    # ----- Cores: destaca o maior gasto -----
-    max_val = grafico_gastos_mensais_gp["Valor_parcela"].max()
+    # Cores (destaca maior gasto)
+    max_val = grafico_gp["Valor_parcela"].max()
     bar_colors = [
         "#FF6666" if v == max_val else "#2E8B57"
-        for v in grafico_gastos_mensais_gp["Valor_parcela"]
+        for v in grafico_gp["Valor_parcela"]
     ]
 
     fig = go.Figure()
 
-    # Barras (valor mensal)
+    # Barras
     fig.add_trace(go.Bar(
-        x=grafico_gastos_mensais_gp["Mês_str"],
-        y=grafico_gastos_mensais_gp["Valor_parcela"],
+        x=grafico_gp["Mês_str"],
+        y=grafico_gp["Valor_parcela"],
         name="Valor pago",
         marker_color=bar_colors,
         hovertemplate="<b>Mês:</b> %{x}<br><b>Valor:</b> R$ %{y:,.2f}<extra></extra>",
     ))
 
-    # Linha (média móvel)
+    # Linha média móvel
     fig.add_trace(go.Scatter(
-        x=grafico_gastos_mensais_gp["Mês_str"],
-        y=grafico_gastos_mensais_gp["Media_movel"],
+        x=grafico_gp["Mês_str"],
+        y=grafico_gp["Media_movel"],
         name="Média móvel (3 meses)",
         mode="lines+markers",
         line=dict(color="orange", width=3),
@@ -219,46 +285,57 @@ def gerar_grafico_gastos_mensais(df_despesas,ano_atual,mes_atual,ano_analise):
         yaxis=dict(tickprefix="R$ ", separatethousands=True),
     )
 
-    return st.plotly_chart(fig, use_container_width=True)
+    return fig
 
 
-def graficos_adicionais(df_despesas,ano_analise,mes_atual,mes_dict):
-    df_ytd = df_despesas.loc[df_despesas['Ano'] == ano_analise]
-    df_ytd = df_ytd.loc[df_despesas['Mês'] < mes_atual]
-    df_ytd["Mês_str"] = df_ytd['Mês'].map(mes_dict)
-    
-    lista_de_meses = df_ytd["Mês_str"].unique().tolist()
-    mes_selecionado = st.selectbox("Selecione um mês:", lista_de_meses)
+def graficos_mes_dinamico(df_ytd: pd.DataFrame, mes_selecionado_dinamico: str):
+    """
+    Espera df_ytd já com a coluna 'Mês_str' preenchida (ex: df_ytd['Mês_str'] = df_ytd['Mês'].map(mes_dict)).
+    Retorna (fig_pagamento, fig_categoria).
+    """
+    df_mes_dinamico = df_ytd.loc[
+        df_ytd["Mês_str"] == mes_selecionado_dinamico
+    ].copy()
 
-    # Filtrar
-    df_mes_dinamico = df_ytd.loc[df_ytd["Mês_str"] == mes_selecionado]
+    if df_mes_dinamico.empty:
+        return None, None
 
-    # Agrupamentos
-    gp_pagamento = df_mes_dinamico.groupby("Forma_de_Pagamento")["Valor_parcela"].sum().reset_index()
-    gp_categoria = df_mes_dinamico.groupby("Categoria")["Valor_parcela"].sum().reset_index()
+    gp_pagamento = (
+        df_mes_dinamico
+        .groupby("Forma_de_Pagamento", as_index=False)["Valor_parcela"]
+        .sum()
+    )
 
-    # FIG PAGAMENTO
+    gp_categoria = (
+        df_mes_dinamico
+        .groupby("Categoria", as_index=False)["Valor_parcela"]
+        .sum()
+    )
+
     fig_pagamento = px.bar(
         gp_pagamento,
         x="Valor_parcela",
         y="Forma_de_Pagamento",
         orientation="h",
         title="Gastos por Forma de Pagamento",
-        text="Valor_parcela"
+        text="Valor_parcela",
+        color_discrete_sequence=["#2E8B57"],
     )
-    fig_pagamento.update_traces(texttemplate="R$ %{text:,.2f}", textposition="outside")
+    fig_pagamento.update_traces(texttemplate="R$ %{text:,.2f}")
     fig_pagamento.update_layout(xaxis_title="Valor (R$)", yaxis_title="")
+    fig_pagamento = _ajustar_barh(fig_pagamento)
 
-    # FIG CATEGORIA
     fig_categoria = px.bar(
         gp_categoria,
         x="Valor_parcela",
         y="Categoria",
         orientation="h",
         title="Gastos por Categoria",
-        text="Valor_parcela"
+        text="Valor_parcela",
+        color_discrete_sequence=["#2E8B57"],
     )
-    fig_categoria.update_traces(texttemplate="R$ %{text:,.2f}", textposition="outside")
+    fig_categoria.update_traces(texttemplate="R$ %{text:,.2f}")
     fig_categoria.update_layout(xaxis_title="Valor (R$)", yaxis_title="")
+    fig_categoria = _ajustar_barh(fig_categoria)
 
     return fig_pagamento, fig_categoria
