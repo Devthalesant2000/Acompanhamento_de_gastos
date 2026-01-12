@@ -8,13 +8,13 @@ mes_atual = hoje.month
 ano_atual = hoje.year
 mes_atual_str = str(mes_atual)
 ano_atual_str = str(ano_atual)
-mes_ano_atual = mes_atual_str + "/" +  ano_atual_str
+mes_ano_atual = f"{hoje:%m/%Y}"  # "01/2026"
 
 def treating_df_for_current_month(df):
     df_mes_atual = df
     
     df_mes_atual["Parcela_Atual"] = df_mes_atual["Parcela_Atual"].astype(str)
-
+    
     df_mes_atual['Mês_ano'] = df_mes_atual['Data'].dt.strftime("%m/%Y")
     df_mes_atual = df_mes_atual.loc[df_mes_atual['Mês_ano'] == mes_ano_atual]
 
