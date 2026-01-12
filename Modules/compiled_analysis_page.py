@@ -23,6 +23,11 @@ st.set_page_config(page_title="Relatório Compilado", layout="wide")
 @st.cache_data(ttl=600, show_spinner=False)
 def carregar_e_tratar_df(spreadsheet_id: str, sheet_name: str) -> pd.DataFrame:
     df = get_sheet_as_df(spreadsheet_id, sheet_name)
+    
+    if df.empty:
+        st.info("Comece Preenchedo pelo menos um lançamento para esse Centro De Custos!")
+        st.info("Ainda Não Há Dados a Serem Mostrados.")
+        st.stop()
 
     df["Data_dt"] = pd.to_datetime(
         df["Data"],
@@ -59,7 +64,8 @@ def render_analise_compilada(df_base: pd.DataFrame, ano_analise: int, centro_cus
     ].copy()
 
     if df_periodo.empty:
-        st.info("Sem dados para o período selecionado.")
+        st.info("Ainda Não há dados de um mês fechado para o Ano em questão.")
+        st.info("Você terá dados para analisar nessa página à partir de Feveriro.")
         return
 
     # KPIs (função universal)

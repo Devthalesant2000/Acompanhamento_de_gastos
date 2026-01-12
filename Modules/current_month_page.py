@@ -11,8 +11,14 @@ spreadsheet_id = '1q0xLDFXhV_k7QNePUdA43KqFxvxyeI8AzyqZfdES42w'
 sheet_name_get = 'respostas_forms'
 sheet_fornecedores = 'fornecedores_db'
 
+st.title(f"Acompanhamento do Mês Atual - {mes_ano_atual}")
 # Pegando Dataframe
 df_despesas = get_sheet_as_df(spreadsheet_id, sheet_name_get)
+
+if df_despesas.empty:
+    st.info("Comece preenchedo pelo menos um lançamento para esse centro de custos!")
+    st.info("Ainda não há dados a serem mostrados.")
+    st.stop()
 
 #Tratar data recebidas
 df_despesas["Data"] = pd.to_datetime(
@@ -146,7 +152,6 @@ def render_dashboard_por_tipo(df_mes_atual_tipo: pd.DataFrame, titulo: str):
 # -------------------------------------------------------------------
 # Começa a página
 # -------------------------------------------------------------------
-st.title(f"Acompanhamento do Mês Atual - {mes_ano_atual}")
 
 tab1, tab2 = st.tabs(["Pessoa Física", "Pessoa Jurídica"])
 
