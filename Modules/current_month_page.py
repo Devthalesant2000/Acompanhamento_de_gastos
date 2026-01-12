@@ -16,7 +16,7 @@ st.title(f"Acompanhamento do Mês Atual - {mes_ano_atual}")
 df_despesas = get_sheet_as_df(spreadsheet_id, sheet_name_get)
 
 if df_despesas.empty:
-    st.info("Comece preenchedo pelo menos um lançamento para esse centro de custos!")
+    st.info("Comece preenchedo pelo menos um lançamento para esse centro de custo!")
     st.info("Ainda não há dados a serem mostrados.")
     st.stop()
 

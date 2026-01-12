@@ -25,7 +25,7 @@ def carregar_e_tratar_df(spreadsheet_id: str, sheet_name: str) -> pd.DataFrame:
     df = get_sheet_as_df(spreadsheet_id, sheet_name)
     
     if df.empty:
-        st.info("Comece Preenchedo pelo menos um lançamento para esse Centro De Custos!")
+        st.info("Comece Preenchedo pelo menos um lançamento para esse Centro De Custo!")
         st.info("Ainda Não Há Dados a Serem Mostrados.")
         st.stop()
 
